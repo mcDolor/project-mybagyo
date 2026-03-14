@@ -62,6 +62,12 @@ export default function WeatherDashboard() {
   const [mounted, setMounted] = useState(false);
   const { theme, setTheme } = useTheme();
 
+  //State variables for API integration
+  const [searchQuery, setSearchQuery] = useState('');
+  const [weatherData, setWeatherData] = useState<any>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
   // useEffect only runs on the client, so now we can safely show the UI
   useEffect(() => {
     setMounted(true);
@@ -81,12 +87,46 @@ export default function WeatherDashboard() {
     }
   };
 
+  //FETCH FUNTION
+  const fetchWeather = async (city: string) => {
+    if (!city) return;
+    
+    setIsLoading(true); // Trigger loading spinner
+    setError(null);     // Reset previous errors
+
+    try {
+      const apiKey = process.env.NEXT_PUBLIC_WEATHER_API_KEY;
+      const response = await fetch(
+        `https://api.openweathermap.org/data/2.5/weather?q=${city}&appid=${apiKey}&units=metric`
+      );
+
+      if (!response.ok) {
+        // Handle Invalid City Input [cite: 389]
+        if (response.status === 404) {
+          throw new Error('City not found. Please check your spelling.');
+        }
+        throw new Error('An error occurred while fetching data.');
+      }
+
+      const data = await response.json();
+      setWeatherData(data);
+      
+    } catch (err: any) {
+      // Handle Network Failure or custom errors [cite: 390]
+      setError(err.message || 'Failed to fetch weather data. Check your connection.');
+      setWeatherData(null);
+    } finally {
+      setIsLoading(false); // Stop loading spinner [cite: 391]
+    }
+  };
+
   return (
     <div className="min-h-screen bg-[#F8F9FA] dark:bg-[#0B0F19] text-[#1A1A1A] dark:text-[#F8F9FA] font-sans transition-colors duration-300">
       <div className="max-w-[1120px] mx-auto px-6 py-8">
         
         {/* Header / Command Bar */}
         <header className="flex justify-between items-center mb-10">
+
           {/* Left: Brand */}
           <div className="flex items-center gap-3.5">
             <Image 
