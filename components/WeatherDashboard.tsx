@@ -13,7 +13,7 @@ import {
   CloudRain
 } from 'lucide-react';
 import Image from 'next/image';
-import logoSrc from '@/assets/logo.png';
+import logoSrc from '@/assets/logo-only.svg';
 
 const forecastData = [
   {
@@ -92,8 +92,8 @@ export default function WeatherDashboard() {
             <Image 
               src={logoSrc} 
               alt="MyBagyo Logo" 
-              width={44} 
-              height={44} 
+              width={50} 
+              height={50} 
               className="object-contain drop-shadow-sm" 
             />
             <span className="text-[22px] font-bold tracking-tight">MyBagyo</span>
@@ -126,7 +126,7 @@ export default function WeatherDashboard() {
         </header>
 
         {/* Hero Section / Current Conditions */}
-        <section className="bg-gradient-to-r from-[#EEF3FF] via-[#F8F5FF] to-[#FFF0E8] dark:from-[#1E293B]/40 dark:via-[#1E293B]/30 dark:to-[#1E293B]/40 rounded-[2.5rem] px-12 py-14 shadow-[inset_0_2px_4px_rgba(255,255,255,0.6)] dark:shadow-[inset_0_2px_4px_rgba(255,255,255,0.05)] border border-transparent dark:border-white/5 flex flex-col lg:flex-row gap-8 justify-between items-center mb-14 transition-colors duration-300">
+        <section className="bg-gradient-to-r from-[#8EBAD2] to-[#CBD8D9] dark:from-[#1E293B]/40 dark:via-[#1E293B]/30 dark:to-[#1E293B]/40 rounded-[2.5rem] px-12 py-14 border-t-2 border-t-white/60 dark:border-t-white/5 border-l-transparent border-r-transparent border-b-transparent flex flex-col lg:flex-row gap-8 justify-between items-center mb-14 transition-colors duration-300">
           
           {/* Left Col (Location) */}
           <div className="text-center lg:text-left">
