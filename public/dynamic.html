@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>MyBagyo – Dynamic</title>
+    <link rel="stylesheet" href="styles.css" />
+</head>
+
+<body>
+
+    <!-- ── Header ── -->
+    <header class="header">
+        <div class="header-inner">
+            <a class="logo" href="#">
+                <div class="logo-icon"><img src="/assets/logo-only.svg" alt="MyBagyo logo"></div>
+                MyBagyo
+            </a>
+
+            <div class="search-wrap" id="searchWrap">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2"
+                    stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round"
+                        d="M21 21l-4.35-4.35M17 11A6 6 0 1 1 5 11a6 6 0 0 1 12 0z" />
+                </svg>
+                <input class="search-input" id="searchInput" type="text" placeholder="Search city name…"
+                    autocomplete="off" />
+                <div class="suggestions" id="suggestions" style="display:none;"></div>
+            </div>
+
+            <button class="toggle-btn" id="darkToggle" title="Toggle dark mode">🌙</button>
+        </div>
+    </header>
+
+    <!-- ── Main ── -->
+    <main class="main" id="mainContent">
+        <div class="loading" id="loadingState">
+            <div class="spinner"></div>
+            <span>Fetching weather…</span>
+        </div>
+        <div id="weatherContent" style="display:none;"></div>
+        <div class="error-msg" id="errorMsg" style="display:none;"></div>
+    </main>
+
+    <script>
+        /* ── Config ── */
+        const GEO_URL = 'https://geocoding-api.open-meteo.com/v1/search';
+        const WX_URL = 'https://api.open-meteo.com/v1/forecast';
+
+        const ICON_BASE = 'https://bmcdn.nl/assets/weather-icons/v3.0/fill/svg/';
+
+        const WMO_MAP = {
+            0: { label: 'Clear Sky', icon: 'clear-day' },
+            1: { label: 'Mostly Clear', icon: 'partly-cloudy-day' },
+            2: { label: 'Partly Cloudy', icon: 'partly-cloudy-day' },
+            3: { label: 'Overcast', icon: 'overcast' },
+            45: { label: 'Foggy', icon: 'fog' },
+            48: { label: 'Icy Fog', icon: 'fog' },
+            51: { label: 'Light Drizzle', icon: 'drizzle' },
+            53: { label: 'Drizzle', icon: 'drizzle' },
+            55: { label: 'Heavy Drizzle', icon: 'overcast-drizzle' },
+            61: { label: 'Light Rain', icon: 'rain' },
+            63: { label: 'Rain', icon: 'rain' },
+            65: { label: 'Heavy Rain', icon: 'overcast-rain' },
+            71: { label: 'Light Snow', icon: 'snow' },
+            73: { label: 'Snow', icon: 'snow' },
+            75: { label: 'Heavy Snow', icon: 'overcast-snow' },
+            77: { label: 'Snow Grains', icon: 'snow' },
+            80: { label: 'Showers', icon: 'partly-cloudy-day-rain' },
+            81: { label: 'Rain Showers', icon: 'partly-cloudy-day-rain' },
+            82: { label: 'Violent Showers', icon: 'thunderstorms-rain' },
+            85: { label: 'Snow Showers', icon: 'partly-cloudy-day-snow' },
+            86: { label: 'Heavy Snow Showers', icon: 'partly-cloudy-day-snow' },
+            95: { label: 'Thunderstorm', icon: 'thunderstorms' },
+            96: { label: 'Thunderstorm w/ Hail', icon: 'thunderstorms-overcast' },
+            99: { label: 'Heavy Thunderstorm', icon: 'thunderstorms-overcast' },
+        };
+
+        function wmo(code) {
+            return WMO_MAP[code] || { label: 'Unknown', icon: 'not-available' };
+        }
+
+        function iconImg(name, size) {
+            return `<img src="${ICON_BASE}${name}.svg" width="${size}" height="${size}" alt="${name}" style="display:block;" />`;
+        }
+
+        const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
+        /* ── State ── */
+        let currentCity = null;
+
+        /* ── DOM helpers ── */
+        const $ = id => document.getElementById(id);
+        function showLoading() { $('loadingState').style.display = 'flex'; $('weatherContent').style.display = 'none'; $('errorMsg').style.display = 'none'; }
+        function showError(msg) { $('loadingState').style.display = 'none'; $('weatherContent').style.display = 'none'; $('errorMsg').style.display = 'block'; $('errorMsg').textContent = msg; }
+        function showWeather(html) { $('loadingState').style.display = 'none'; $('errorMsg').style.display = 'none'; $('weatherContent').innerHTML = html; $('weatherContent').style.display = 'block'; }
+
+        /* ── Cache ── */
+        const weatherCache = new Map();
+        function cacheKey(lat, lon) { return `${lat.toFixed(3)},${lon.toFixed(3)}`; }
+        function isFresh(entry) { return Date.now() - entry.ts < 10 * 60 * 1000; }
+
+        /* ── Geocoding ── */
+        async function geocode(name) {
+            const res = await fetch(`${GEO_URL}?name=${encodeURIComponent(name)}&count=5&language=en&format=json`);
+            const data = await res.json();
+            return data.results || [];
+        }
+
+        /* ── Weather Fetch ── */
+        async function fetchWeather(lat, lon) {
+            const key = cacheKey(lat, lon);
+            if (weatherCache.has(key) && isFresh(weatherCache.get(key))) {
+                return weatherCache.get(key).data;
+            }
+            const params = new URLSearchParams({
+                latitude: lat,
+                longitude: lon,
+                current: 'temperature_2m,apparent_temperature,relative_humidity_2m,wind_speed_10m,visibility,weather_code',
+                daily: 'weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max',
+                forecast_days: 6,
+                wind_speed_unit: 'kmh',
+                timezone: 'auto',
+            });
+            const res = await fetch(`${WX_URL}?${params}`);
+            const data = await res.json();
+            weatherCache.set(key, { data, ts: Date.now() });
+            return data;
+        }
+
+        /* ── Render ── */
+        function renderWeather(city, country, data) {
+            const c = data.current;
+            const d = data.daily;
+            const cw = wmo(c.weather_code);
+
+            const temp = Math.round(c.temperature_2m);
+            const feels = Math.round(c.apparent_temperature);
+            const humidity = c.relative_humidity_2m;
+            const wind = Math.round(c.wind_speed_10m);
+            const vis = c.visibility >= 1000
+                ? (c.visibility / 1000).toFixed(0) + ' km'
+                : c.visibility + ' m';
+
+            /* 5-day cards (skip today = index 0) */
+            const forecastCards = d.time.slice(1, 6).map((dateStr, i) => {
+                const idx = i + 1;
+                const dow = DAYS[new Date(dateStr).getDay()];
+                const info = wmo(d.weather_code[idx]);
+                const hi = Math.round(d.temperature_2m_max[idx]);
+                const lo = Math.round(d.temperature_2m_min[idx]);
+                const rain = d.precipitation_probability_max[idx];
+                return `
+      <div class="forecast-card" style="animation-delay:${i * 0.06 + 0.05}s">
+        <div class="forecast-day">${dow}</div>
+        <div class="forecast-icon-circle">${iconImg(info.icon, 70)}</div>
+        <div class="forecast-high">${hi}°</div>
+        <div class="forecast-low">${lo}°</div>
+        <div class="forecast-desc">${info.label}</div>
+        ${rain > 0 ? `<div class="forecast-rain">💧 ${rain}% chance</div>` : ''}
+      </div>`;
+            }).join('');
+
+            return `
+    <div class="hero-card">
+      <div class="hero-location">
+        <div class="hero-city">${city}</div>
+        <div class="hero-country">${country}</div>
+      </div>
+      <div class="hero-temp-icon">
+        <div class="hero-temp-wrap">
+          <div class="hero-temp">${temp}°</div>
+          <div class="hero-feels">Feels like ${feels}°</div>
+        </div>
+        <div class="hero-icon-wrap">${iconImg(cw.icon, 80)}</div>
+      </div>
+      <div class="hero-details-wrap">
+        <div class="hero-condition">${cw.label}</div>
+        <div class="hero-details">
+        <div class="detail-item">
+          <span class="detail-icon"><img src="https://bmcdn.nl/assets/weather-icons/v3.0/fill/svg/humidity.svg" alt="humidity" /></span>
+          <span class="detail-label">Humidity</span>
+          <span class="detail-value">${humidity}%</span>
+        </div>
+        <div class="detail-item">
+          <span class="detail-icon"><img src="https://bmcdn.nl/assets/weather-icons/v3.0/fill/svg/wind.svg" alt="wind" /></span>
+          <span class="detail-label">Wind</span>
+          <span class="detail-value">${wind} km/h</span>
+        </div>
+        <div class="detail-item">
+          <span class="detail-icon"><img src="https://bmcdn.nl/assets/weather-icons/v3.0/fill/svg/mist.svg" alt="visibility" /></span>
+          <span class="detail-label">Visibility</span>
+          <span class="detail-value">${vis}</span>
+        </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section-title">5-Day Forecast</div>
+    <div class="section-sub">Weather forecast for the next 5 days</div>
+    <div class="forecast-grid">${forecastCards}</div>`;
+        }
+
+        /* ── Load city ── */
+        async function loadCity(name, lat, lon, country) {
+            showLoading();
+            try {
+                const data = await fetchWeather(lat, lon);
+                showWeather(renderWeather(name, country, data));
+                currentCity = { name, lat, lon, country };
+            } catch (e) {
+                showError('Could not load weather data. Please try again.');
+            }
+        }
+
+        /* ── Search / Suggestions ── */
+        let debounceTimer;
+        const input = $('searchInput');
+        const suggestions = $('suggestions');
+
+        input.addEventListener('input', () => {
+            clearTimeout(debounceTimer);
+            const q = input.value.trim();
+            if (q.length < 2) { suggestions.style.display = 'none'; return; }
+            debounceTimer = setTimeout(async () => {
+                try {
+                    const results = await geocode(q);
+                    if (!results.length) { suggestions.style.display = 'none'; return; }
+                    suggestions.innerHTML = results.map(r => `
+        <div class="suggestion-item"
+             data-lat="${r.latitude}"
+             data-lon="${r.longitude}"
+             data-name="${r.name}"
+             data-country="${r.country || ''}">
+          📍 <span>${r.name}${r.admin1 ? ', ' + r.admin1 : ''}${r.country ? ' — ' + r.country : ''}</span>
+        </div>`).join('');
+                    suggestions.style.display = 'block';
+
+                    // Prefetch weather for top result so it's cached when user clicks
+                    const top = results[0];
+                    fetchWeather(top.latitude, top.longitude).catch(() => { });
+                } catch { suggestions.style.display = 'none'; }
+            }, 450);
+        });
+
+        suggestions.addEventListener('mouseover', e => {
+            const item = e.target.closest('.suggestion-item');
+            if (!item) return;
+            fetchWeather(parseFloat(item.dataset.lat), parseFloat(item.dataset.lon)).catch(() => { });
+        });
+
+        suggestions.addEventListener('click', e => {
+            const item = e.target.closest('.suggestion-item');
+            if (!item) return;
+            const { lat, lon, name, country } = item.dataset;
+            input.value = name;
+            suggestions.style.display = 'none';
+            loadCity(name, parseFloat(lat), parseFloat(lon), country);
+        });
+
+        document.addEventListener('click', e => {
+            if (!$('searchWrap').contains(e.target)) suggestions.style.display = 'none';
+        });
+
+        input.addEventListener('keydown', e => {
+            if (e.key === 'Enter') {
+                const first = suggestions.querySelector('.suggestion-item');
+                if (first) first.click();
+            }
+        });
+
+        /* ── Dark Mode ── */
+        $('darkToggle').addEventListener('click', () => {
+            document.body.classList.toggle('dark');
+            $('darkToggle').textContent = document.body.classList.contains('dark') ? '☀️' : '🌙';
+        });
+
+        /* ── Bootstrap: load San Francisco ── */
+        loadCity('San Francisco', 37.7749, -122.4194, 'United States');
+    </script>
+</body>
+
+</html>
