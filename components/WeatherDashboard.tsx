@@ -1,4 +1,7 @@
-import React from 'react';
+"use client";
+
+import React, { useState, useEffect } from 'react';
+import { useTheme } from 'next-themes';
 import {
   Search,
   Moon,
@@ -54,6 +57,14 @@ const forecastData = [
 ];
 
 export default function WeatherDashboard() {
+  const [mounted, setMounted] = useState(false);
+  const { theme, setTheme } = useTheme();
+
+  // useEffect only runs on the client, so now we can safely show the UI
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
   const renderIcon = (iconName: string, className?: string) => {
     const iconProps = { className, size: 52, strokeWidth: 2 };
     switch (iconName) {
@@ -95,8 +106,16 @@ export default function WeatherDashboard() {
           </div>
 
           {/* Right: Dark Mode Toggle */}
-          <button className="w-12 h-12 flex items-center justify-center rounded-full bg-white border border-gray-200/80 hover:bg-gray-50 transition-colors">
-            <Moon className="text-gray-500" size={20} />
+          <button 
+            onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+            className="w-12 h-12 flex items-center justify-center rounded-full bg-white border border-gray-200/80 hover:bg-gray-50 transition-colors"
+            aria-label="Toggle Dark Mode"
+          >
+            {mounted && theme === 'dark' ? (
+              <Sun className="text-gray-500" size={20} />
+            ) : (
+              <Moon className="text-gray-500" size={20} />
+            )}
           </button>
         </header>
 
