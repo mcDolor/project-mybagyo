@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>MyBagyo – Static</title>
+    <link rel="stylesheet" href="styles.css" />
+</head>
+
+<body>
+
+    <!-- ── Header ── -->
+    <header class="header">
+        <div class="header-inner">
+            <a class="logo" href="#">
+                <div class="logo-icon"><img src="/assets/logo-only.svg" alt="logo"></div>
+                MyBagyo
+            </a>
+
+            <div class="search-wrap">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2"
+                    stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round"
+                        d="M21 21l-4.35-4.35M17 11A6 6 0 1 1 5 11a6 6 0 0 1 12 0z" />
+                </svg>
+                <input class="search-input" type="text" placeholder="Search city name…" readonly />
+            </div>
+
+            <button class="toggle-btn" id="darkToggle" title="Toggle dark mode">🌙</button>
+        </div>
+    </header>
+
+    <!-- ── Main ── -->
+    <main class="main">
+
+        <!-- Hero Card -->
+        <div class="hero-card">
+            <div class="hero-location">
+                <div class="hero-city">San Francisco</div>
+                <div class="hero-country">United States</div>
+            </div>
+
+            <div class="hero-temp-icon">
+                <div class="hero-temp-wrap">
+                    <div class="hero-temp">18°</div>
+                    <div class="hero-feels">Feels like 16°</div>
+                </div>
+                <div class="hero-icon-wrap"><img
+                        src="https://bmcdn.nl/assets/weather-icons/v3.0/fill/svg/partly-cloudy-day.svg" width="80"
+                        height="80" alt="partly cloudy" /></div>
+            </div>
+
+            <div class="hero-details-wrap">
+                <div class="hero-condition">Partly Cloudy</div>
+                <div class="hero-details">
+                    <div class="detail-item">
+                        <span class="detail-icon"><img
+                                src="https://bmcdn.nl/assets/weather-icons/v3.0/fill/svg/humidity.svg"
+                                alt="humidity" /></span>
+                        <span class="detail-label">Humidity</span>
+                        <span class="detail-value">65%</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-icon"><img
+                                src="https://bmcdn.nl/assets/weather-icons/v3.0/fill/svg/wind.svg" alt="wind" /></span>
+                        <span class="detail-label">Wind</span>
+                        <span class="detail-value">12 km/h</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-icon"><img
+                                src="https://bmcdn.nl/assets/weather-icons/v3.0/fill/svg/mist.svg"
+                                alt="visibility" /></span>
+                        <span class="detail-label">Visibility</span>
+                        <span class="detail-value">10 km</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 5-Day Forecast -->
+        <div class="section-title">5-Day Forecast</div>
+        <div class="section-sub">Weather forecast for the next 5 days</div>
+
+        <div class="forecast-grid">
+
+            <div class="forecast-card">
+                <div class="forecast-day">Mon</div>
+                <div class="forecast-icon-circle"><img
+                        src="https://bmcdn.nl/assets/weather-icons/v3.0/fill/svg/clear-day.svg" width="70" height="70"
+                        alt="sunny" /></div>
+                <div class="forecast-high">22°</div>
+                <div class="forecast-low">15°</div>
+                <div class="forecast-desc">Sunny</div>
+            </div>
+
+            <div class="forecast-card">
+                <div class="forecast-day">Tue</div>
+                <div class="forecast-icon-circle"><img
+                        src="https://bmcdn.nl/assets/weather-icons/v3.0/fill/svg/partly-cloudy-day.svg" width="70"
+                        height="70" alt="partly cloudy" /></div>
+                <div class="forecast-high">20°</div>
+                <div class="forecast-low">14°</div>
+                <div class="forecast-desc">Partly Cloudy</div>
+                <div class="forecast-rain">💧 10% chance</div>
+            </div>
+
+            <div class="forecast-card">
+                <div class="forecast-day">Wed</div>
+                <div class="forecast-icon-circle"><img
+                        src="https://bmcdn.nl/assets/weather-icons/v3.0/fill/svg/rain.svg" width="70" height="70"
+                        alt="rainy" /></div>
+                <div class="forecast-high">16°</div>
+                <div class="forecast-low">12°</div>
+                <div class="forecast-desc">Rainy</div>
+                <div class="forecast-rain">💧 80% chance</div>
+            </div>
+
+            <div class="forecast-card">
+                <div class="forecast-day">Thu</div>
+                <div class="forecast-icon-circle"><img
+                        src="https://bmcdn.nl/assets/weather-icons/v3.0/fill/svg/overcast.svg" width="70" height="70"
+                        alt="cloudy" /></div>
+                <div class="forecast-high">17°</div>
+                <div class="forecast-low">13°</div>
+                <div class="forecast-desc">Cloudy</div>
+                <div class="forecast-rain">💧 40% chance</div>
+            </div>
+
+            <div class="forecast-card">
+                <div class="forecast-day">Fri</div>
+                <div class="forecast-icon-circle"><img
+                        src="https://bmcdn.nl/assets/weather-icons/v3.0/fill/svg/clear-day.svg" width="70" height="70"
+                        alt="sunny" /></div>
+                <div class="forecast-high">21°</div>
+                <div class="forecast-low">14°</div>
+                <div class="forecast-desc">Sunny</div>
+                <div class="forecast-rain">💧 5% chance</div>
+            </div>
+
+        </div>
+    </main>
+
+    <script>
+        // Dark mode toggle
+        document.getElementById('darkToggle').addEventListener('click', () => {
+            document.body.classList.toggle('dark');
+            const btn = document.getElementById('darkToggle');
+            btn.textContent = document.body.classList.contains('dark') ? '☀️' : '🌙';
+        });
+    </script>
+</body>
+
+</html>
