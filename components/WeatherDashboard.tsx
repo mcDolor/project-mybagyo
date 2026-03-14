@@ -2,61 +2,21 @@
 
 import React, { useState, useEffect } from 'react';
 import { useTheme } from 'next-themes';
-import {
-  Search,
-  Moon,
-  Droplet,
-  Wind,
-  Eye,
-  Sun,
-  Cloud,
-  CloudRain
-} from 'lucide-react';
+import dynamic from 'next/dynamic';
+
+// Lazy load weather icons to improve initial bundle size
+const Search = dynamic(() => import('lucide-react').then((mod) => mod.Search));
+const Moon = dynamic(() => import('lucide-react').then((mod) => mod.Moon));
+const Droplet = dynamic(() => import('lucide-react').then((mod) => mod.Droplet));
+const Wind = dynamic(() => import('lucide-react').then((mod) => mod.Wind));
+const Eye = dynamic(() => import('lucide-react').then((mod) => mod.Eye));
+const Sun = dynamic(() => import('lucide-react').then((mod) => mod.Sun));
+const Cloud = dynamic(() => import('lucide-react').then((mod) => mod.Cloud));
+const CloudRain = dynamic(() => import('lucide-react').then((mod) => mod.CloudRain));
+const Snowflake = dynamic(() => import('lucide-react').then((mod) => mod.Snowflake));
+
 import Image from 'next/image';
 import logoSrc from '@/assets/logo-only.svg';
-
-const forecastData = [
-  {
-    day: 'Mon',
-    icon: 'Sun',
-    high: '22°',
-    low: '15°',
-    condition: 'Sunny',
-    precipitationChance: null
-  },
-  {
-    day: 'Tue',
-    icon: 'Cloud',
-    high: '19°',
-    low: '14°',
-    condition: 'Cloudy',
-    precipitationChance: null
-  },
-  {
-    day: 'Wed',
-    icon: 'CloudRain',
-    high: '17°',
-    low: '12°',
-    condition: 'Rain',
-    precipitationChance: 80
-  },
-  {
-    day: 'Thu',
-    icon: 'Sun',
-    high: '24°',
-    low: '16°',
-    condition: 'Sunny',
-    precipitationChance: null
-  },
-  {
-    day: 'Fri',
-    icon: 'Cloud',
-    high: '21°',
-    low: '15°',
-    condition: 'Partly Cloudy',
-    precipitationChance: 10
-  }
-];
 
 export default function WeatherDashboard() {
   const [mounted, setMounted] = useState(false);
@@ -72,22 +32,11 @@ export default function WeatherDashboard() {
   // useEffect only runs on the client, so now we can safely show the UI
   useEffect(() => {
     setMounted(true);
-    fetchWeather('Baybay'); // Default city on load
+    const savedCity = localStorage.getItem('lastSearchedCity') || 'Manila'; // save city to localStorage for persistence
+    fetchWeather(savedCity);
   }, []);
 
-  const renderIcon = (iconName: string, className?: string) => {
-    const iconProps = { className, size: 52, strokeWidth: 2 };
-    switch (iconName) {
-      case 'Sun':
-        return <Sun {...iconProps} color="#F59E0B" />;
-      case 'Cloud':
-        return <Cloud {...iconProps} color="#94A3B8" />;
-      case 'CloudRain':
-        return <CloudRain {...iconProps} color="#3B82F6" />;
-      default:
-        return <Sun {...iconProps} />;
-    }
-  };
+
 
   //FETCH FUNTION
   const fetchWeather = async (city: string) => {
@@ -113,6 +62,7 @@ export default function WeatherDashboard() {
 
       const data = await response.json();
       setWeatherData(data);
+      localStorage.setItem('lastSearchedCity', city);
       
       // 2. Fetch 5-Day Forecast
       const forecastResponse = await fetch(
@@ -150,6 +100,7 @@ export default function WeatherDashboard() {
               width={50} 
               height={50} 
               className="object-contain drop-shadow-sm" 
+              priority //optimize image loading for logo
             />
             <span className="text-[22px] font-bold tracking-tight">MyBagyo</span>
           </div>
@@ -227,13 +178,23 @@ export default function WeatherDashboard() {
               </div>
              
 
+              {/* Inline Dynamic Icon */}
               {(() => {
                 const condition = weatherData.weather[0].main;
-                let iconName = 'Sun'; // Defaults to Sun for "Clear" skies
-                if (condition === 'Clouds') iconName = 'Cloud';
-                if (condition === 'Rain' || condition === 'Drizzle' || condition === 'Thunderstorm') iconName = 'CloudRain';
+                const iconClasses = "-ml-2 shrink-0 transition-colors";
                 
-                return renderIcon(iconName, "w-[130px] h-[130px] !w-[130px] !h-[130px] -ml-2 shrink-0 transition-colors");
+                if (condition === 'Clouds') {
+                  return <Cloud className={iconClasses} size={130} strokeWidth={2} color="#94A3B8" />;
+                }
+                if (condition === 'Rain' || condition === 'Drizzle' || condition === 'Thunderstorm') {
+                  return <CloudRain className={iconClasses} size={130} strokeWidth={2} color="#3B82F6" />;
+                }
+                if (condition === 'Snow') { 
+                  return <Snowflake className={iconClasses} size={130} strokeWidth={2} color="#93C5FD" />;
+                }
+                
+                // Default to Sun for "Clear"
+                return <Sun className={iconClasses} size={130} strokeWidth={2} color="#F59E0B" />;
               })()}
             </div>
             <p className="text-[19px] font-medium text-[#64748B] mt-2">
@@ -302,9 +263,16 @@ export default function WeatherDashboard() {
               const dayName = date.toLocaleDateString('en-US', { weekday: 'short' });
 
               const condition = forecast.weather[0].main;
-              let iconName = 'Sun';
-              if (condition === 'Clouds') iconName = 'Cloud';
-              if (condition === 'Rain' || condition === 'Drizzle' || condition === 'Thunderstorm') iconName = 'CloudRain';
+              
+              let WeatherIcon = <Sun className="mb-9" size={52} strokeWidth={2} color="#F59E0B" />; // Default
+              
+              if (condition === 'Clouds') {
+                WeatherIcon = <Cloud className="mb-9" size={52} strokeWidth={2} color="#94A3B8" />;
+              } else if (condition === 'Rain' || condition === 'Drizzle' || condition === 'Thunderstorm') {
+                WeatherIcon = <CloudRain className="mb-9" size={52} strokeWidth={2} color="#3B82F6" />;
+              } else if (condition === 'Snow') { 
+                WeatherIcon = <Snowflake className="mb-9" size={52} strokeWidth={2} color="#93C5FD" />;
+              }
               
               const tempHigh = Math.round(forecast.main.temp_max);
               const tempLow = Math.round(forecast.main.temp_min);
@@ -318,7 +286,7 @@ export default function WeatherDashboard() {
                 >
 
                 <div className="text-[18px] font-bold mb-8 text-[#1A1A1A] dark:text-[#F8F9FA]">{dayName}</div>
-                {renderIcon(iconName, "mb-9")}
+                {WeatherIcon}
                 
                 <span className="text-[28px] font-bold leading-none tracking-tight text-[#1A1A1A] dark:text-white">
                   {tempHigh}°
