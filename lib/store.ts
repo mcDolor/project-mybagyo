@@ -1,9 +1,21 @@
 import { create } from 'zustand';
 
+interface WeatherData {
+  dt_txt: string;
+  main: {
+    temp: number;
+    humidity: number;
+  };
+  weather: Array<{
+    description: string;
+    icon: string;
+  }>;
+}
+
 interface WeatherState {
   searchQuery: string;
-  weatherData: any | null;
-  forecastList: any[];
+  weatherData: WeatherData | null;
+  forecastList: WeatherData[];
   isLoading: boolean;
   error: string | null;
   
@@ -56,13 +68,13 @@ export const useWeatherStore = create<WeatherState>((set) => ({
       if (forecastResponse.ok) {
         const forecastJson = await forecastResponse.json();
         // The API returns 40 items (every 3 hours). This filters it to 1 per day (at 12:00 PM)
-        dailyData = forecastJson.list.filter((reading: any) => reading.dt_txt.includes("12:00:00"));
+        dailyData = forecastJson.list.filter((reading: WeatherData) => reading.dt_txt.includes("12:00:00"));
       }
       
       set({ weatherData: data, forecastList: dailyData, isLoading: false });
-    } catch (err: any) {
+    } catch (err: unknown) {
       set({ 
-        error: err.message || 'Failed to fetch weather data. Check your connection.', 
+        error: (err as Error).message || 'Failed to fetch weather data. Check your connection.', 
         weatherData: null, 
         forecastList: [],
         isLoading: false 

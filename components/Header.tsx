@@ -1,6 +1,6 @@
 "use client";
 
-import { ChangeEvent, KeyboardEvent } from "react";
+import { KeyboardEvent } from "react";
 import { Search } from "lucide-react";
 import Image from "next/image";
 import logoSrc from "@/assets/logo-only.svg";
@@ -10,11 +10,6 @@ import { useWeatherStore } from "@/lib/store";
 export default function Header() {
   // Grab the global state variables and functions from Zustand
   const { searchQuery, setSearchQuery, fetchWeather } = useWeatherStore();
-
-  // Handle typing in the input
-  const handleInputChange = (e: ChangeEvent<HTMLInputElement>) => {
-    setSearchQuery(e.target.value);
-  };
 
   // Handle pressing "Enter"
   const handleKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
@@ -48,7 +43,7 @@ export default function Header() {
       </a>
 
       {/* Center: Search */}
-      <div className="hidden md:block w-full max-w-[480px] relative">
+      <div className="w-full max-w-[480px] relative mx-4">
         <div 
           className="absolute inset-y-0 left-0 pl-4 flex items-center cursor-pointer z-10"
           onClick={handleIconClick}
@@ -58,9 +53,9 @@ export default function Header() {
         <input
           className="w-full rounded-xl h-11 bg-[#F0F4F8] dark:bg-[#1A2234] border-2 border-[#A5C0E8] dark:border-blue-500/30 text-sm font-medium pl-10 pr-4 focus:outline-none focus:border-blue-500 transition-all text-[#1A1A1A] dark:text-white placeholder-gray-400"
           type="text"
-          placeholder="Search city name... (Press Enter)"
+          placeholder="Search city name..."
           value={searchQuery}          /* Binds the input to global state */
-          onChange={handleInputChange} /* Updates global state as you type */
+          onChange={(e) => setSearchQuery(e.target.value)} // Updates Zustand memory, but DOES NOT call API yet
           onKeyDown={handleKeyDown}    /* Listens for the Enter key */
           /* Notice: readOnly has been completely removed! */
         />
